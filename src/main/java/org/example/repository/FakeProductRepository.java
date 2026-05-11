@@ -13,12 +13,12 @@ public class FakeProductRepository implements Repository<Product>{
 
     @Override
     public Product findById(int id) {
-        return new Product(1, "dummy", 0.0);
+        return new Product(1, "dummy", 0.0,0);
     }
 
     @Override
     public List<Product> findAll() {
-        return List.of(new Product(2, "dummy", 0.0), new Product(3, "dummy", 0.0));
+        return List.of(new Product(2, "dummy", 0.0,0), new Product(3, "dummy", 0.0,0));
     }
 
     @Override

@@ -8,10 +8,10 @@ public class WalletPaymentProcessor implements PaymentProcessor{
         System.out.println("Processing wallet payment of amount: " + amount);
 
         // TODO: Implement wallet payment processing logic
-        if (amount > walletLimit){
-            System.out.println("Wallet limit exceeded");
-            return false;
-        }
+//        if (amount > walletLimit){
+//            System.out.println("Wallet limit exceeded");
+//            return false;
+//        }
         System.out.println("Wallet payment processed successfully");
         return true;
     }

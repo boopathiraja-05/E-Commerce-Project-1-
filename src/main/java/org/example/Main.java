@@ -1,6 +1,7 @@
 package org.example;
 
 
+import org.example.concurrency.OrderTask;
 import org.example.model.Order;
 import org.example.model.Product;
 import org.example.model.User;
@@ -20,175 +21,125 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
-    static void main() {
-        // =========================
-        // STEP 1 — CREATE USER
-        // =========================
+    static void main() throws InterruptedException {
+        // =========================================
+        // STEP 1 — CREATE SHARED PRODUCT
+        // =========================================
 
-        User user = new User(
+        Product laptop = new Product(
                 1,
-                "John Doe",
-                "john@example.com",
-                "password123"
+                "Laptop",
+                50000,
+                1
         );
 
-        // =========================
-        // STEP 2 — CREATE PRODUCTS
-        // =========================
+        // =========================================
+        // STEP 2 — CREATE USERS
+        // =========================================
 
-        Product product1 = new Product(1, "Laptop", 50000);
-        Product product2 = new Product(2, "Mouse", 1000);
-        Product product3 = new Product(3, "Keyboard", 2000);
+        User user1 = new User(
+                1,
+                "John",
+                "john@gmail.com",
+                "1234"
+        );
 
-        // =========================
-        // STEP 3 — CREATE ORDER
-        // =========================
+        User user2 = new User(
+                2,
+                "Bob",
+                "bob@gmail.com",
+                "5678"
+        );
+
+        // =========================================
+        // STEP 3 — CREATE ORDERS
+        // BOTH USE SAME PRODUCT
+        // =========================================
 
         Order order1 = new Order(
                 1,
-                user,
-                List.of(product1, product2, product3),
-                53000
+                user1,
+                List.of(laptop),
+                50000
         );
 
-        // =========================
-        // STEP 4 — CREATE REPOSITORY
-        // =========================
+        Order order2 = new Order(
+                2,
+                user2,
+                List.of(laptop),
+                50000
+        );
+
+        // =========================================
+        // STEP 4 — CREATE SHARED REPOSITORY
+        // =========================================
 
         Repository<Order> orderRepository =
                 new OrderRepository();
 
-        // =====================================================
-        // TEST CASE 1 — WALLET PAYMENT
-        // =====================================================
-
-        System.out.println("\n========== TEST 1 : WALLET PAYMENT ==========\n");
+        // =========================================
+        // STEP 5 — CREATE PAYMENT PROCESSORS
+        // =========================================
 
         PaymentProcessor walletProcessor =
                 new WalletPaymentProcessor();
 
-        OrderService walletOrderService =
-                new OrderService(orderRepository, walletProcessor);
-
-        boolean walletOrderAdded =
-                walletOrderService.addOrder(order1);
-
-        System.out.println("Order Added : " + walletOrderAdded);
-
-        System.out.println("Fetch Order By ID:");
-        System.out.println(walletOrderService.getOrderById(1));
-
-        System.out.println("Fetch All Orders:");
-        System.out.println(walletOrderService.getAllOrders());
-
-        // =====================================================
-        // TEST CASE 2 — DUPLICATE ORDER
-        // =====================================================
-
-        System.out.println("\n========== TEST 2 : DUPLICATE ORDER ==========\n");
-
-        boolean duplicateOrder =
-                walletOrderService.addOrder(order1);
-
-        System.out.println("Duplicate Order Added : " + duplicateOrder);
-
-        // =====================================================
-        // TEST CASE 3 — DELETE ORDER
-        // =====================================================
-
-        System.out.println("\n========== TEST 3 : DELETE ORDER ==========\n");
-
-        boolean isDeleted =
-                walletOrderService.RemoveOrderById(1);
-
-        System.out.println("Order Deleted : " + isDeleted);
-
-        System.out.println("Orders After Delete:");
-        System.out.println(walletOrderService.getAllOrders());
-
-        // =====================================================
-        // TEST CASE 4 — DELETE NON-EXISTING ORDER
-        // =====================================================
-
-        System.out.println("\n========== TEST 4 : DELETE NON EXISTING ORDER ==========\n");
-
-        boolean deleteAgain =
-                walletOrderService.RemoveOrderById(1);
-
-        System.out.println("Delete Again Result : " + deleteAgain);
-
-        // =====================================================
-        // TEST CASE 5 — NULL ORDER
-        // =====================================================
-
-        System.out.println("\n========== TEST 5 : NULL ORDER ==========\n");
-
-        boolean nullOrder =
-                walletOrderService.addOrder(null);
-
-        System.out.println("Null Order Added : " + nullOrder);
-
-        // =====================================================
-        // TEST CASE 6 — UPI PAYMENT
-        // =====================================================
-
-        System.out.println("\n========== TEST 6 : UPI PAYMENT ==========\n");
-
         PaymentProcessor upiProcessor =
                 new UpiPaymentProcessor();
+
+        // =========================================
+        // STEP 6 — CREATE SERVICES
+        // =========================================
+
+        OrderService walletOrderService =
+                new OrderService(orderRepository, walletProcessor);
 
         OrderService upiOrderService =
                 new OrderService(orderRepository, upiProcessor);
 
-        Order order2 = new Order(
-                2,
-                user,
-                List.of(product1),
-                50000
-        );
+        // =========================================
+        // STEP 7 — CREATE TASKS
+        // =========================================
 
-        boolean upiOrderAdded =
-                upiOrderService.addOrder(order2);
+        OrderTask task1 =
+                new OrderTask(walletOrderService, order1);
 
-        System.out.println("UPI Order Added : " + upiOrderAdded);
+        OrderTask task2 =
+                new OrderTask(walletOrderService, order2);
 
-        System.out.println("All Orders:");
-        System.out.println(upiOrderService.getAllOrders());
+        // =========================================
+        // STEP 8 — CREATE THREADS
+        // =========================================
 
-        // =====================================================
-        // TEST CASE 7 — CREDIT CARD PAYMENT
-        // =====================================================
+        Thread thread1 = new Thread(task1);
+        Thread thread2 = new Thread(task2);
 
-        System.out.println("\n========== TEST 7 : CREDIT CARD PAYMENT ==========\n");
+        thread1.setName("Wallet-Thread");
+        thread2.setName("Wallet 2 -Thread");
 
-        PaymentProcessor cardProcessor =
-                new CreditCaedPaymentProcessor();
+        // =========================================
+        // STEP 9 — START THREADS TOGETHER
+        // =========================================
 
-        OrderService cardOrderService =
-                new OrderService(orderRepository, cardProcessor);
+        thread1.start();
+        thread2.start();
 
-        Order order3 = new Order(
-                3,
-                user,
-                List.of(product2),
-                1000
-        );
+        // =========================================
+        // STEP 10 — WAIT FOR BOTH THREADS
+        // =========================================
 
-        boolean cardOrderAdded =
-                cardOrderService.addOrder(order3);
+        thread1.join();
+        thread2.join();
 
-        System.out.println("Card Order Added : " + cardOrderAdded);
+        // =========================================
+        // STEP 11 — PRINT FINAL RESULTS
+        // =========================================
 
-        System.out.println("All Orders:");
-        System.out.println(cardOrderService.getAllOrders());
+        System.out.println("\n===== FINAL ORDERS =====");
+        System.out.println(walletOrderService.getAllOrders());
 
-        // =====================================================
-        // FINAL STATE
-        // =====================================================
-
-        System.out.println("\n========== FINAL ORDERS ==========\n");
-
-        System.out.println(cardOrderService.getAllOrders());
+        System.out.println("\n===== FINAL PRODUCT QUANTITY =====");
+        System.out.println(laptop.getQuantity());
 
     }
     }
